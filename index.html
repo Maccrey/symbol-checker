@@ -132,8 +132,27 @@
       <button onclick="autoCorrect()">🛠️ 오류 부분 표시</button>
       <button onclick="copyToClipboard()">📋 복사</button>
       <button onclick="downloadResult()">📥 다운로드</button>
-      <button onclick="toggleTheme()">��/☀️ 테마 전환</button>
-      <button onclick="openSpellChecker()">📝 맞춤법 검사</button>
+      <button onclick="toggleTheme()">🌙/☀️ 테마 전환</button>
+      <div style="display: inline-block; margin-left: 1em">
+        <label style="margin-right: 0.7em; cursor: pointer">
+          <input
+            type="radio"
+            name="spellchecker"
+            value="naver"
+            onclick="openSpellChecker('naver')"
+          />
+          네이버 맞춤법 검사기
+        </label>
+        <label style="cursor: pointer">
+          <input
+            type="radio"
+            name="spellchecker"
+            value="barun"
+            onclick="openSpellChecker('barun')"
+          />
+          바른한글 맞춤법 검사기
+        </label>
+      </div>
     </div>
 
     <div class="wrapper">
@@ -151,29 +170,70 @@
     <div id="manualModal">
       <h3>📘 특수문자 검사기 사용 설명서</h3>
       <p>
-        <strong>1. 텍스트 입력</strong><br />검사하고 싶은 문장을 위 텍스트
-        상자에 붙여넣으세요.
+        <strong>1. 텍스트 입력</strong><br />
+        검사하고 싶은 문장을 위 텍스트 상자에 붙여넣거나 직접 입력하세요.
       </p>
-      <p>
-        <strong>2. 🛠️ 오류 부분 표시</strong><br />쌍이 맞지 않는 특수문자에
-        <code>🔺</code> 표시가 추가됩니다.
-      </p>
-      <p>
-        <strong>3. VV 카드</strong><br />두 칸 공백(" ")이 발견된 횟수를 VV
-        카드로 확인합니다.
-      </p>
-      <p>
-        <strong>4. ✅ / ⚠️ 카드</strong><br />짝이 맞는 문자는 ✅, 틀리면 ⚠️으로
-        표시됩니다.
-      </p>
-      <p>
-        <strong>5. 📊 하단 차트</strong><br />특수문자의 사용 빈도를 그래프로
-        확인하세요.
-      </p>
-      <p>
-        <strong>6. 복사 / 저장</strong><br />복사 버튼과 다운로드 버튼으로
-        결과를 저장할 수 있습니다.
-      </p>
+      <div
+        style="
+          background: #f1f8ff;
+          border-radius: 8px;
+          padding: 1em;
+          margin: 1em 0;
+          letter-spacing: 0.02em;
+          line-height: 1.8;
+        "
+      >
+        <b>버튼별 사용법 안내</b><br />
+        <ul style="margin: 0 0 0 1em; padding: 0; list-style-type: none">
+          <li style="margin-bottom: 1.1em">
+            <b>📘 사용설명서</b>:<br />
+            이 설명서(도움말) 창을 엽니다.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>🗑️ 초기화</b>:<br />
+            텍스트 상자의 모든 내용을 지웁니다.<br />
+            새로 입력하거나, 기존 내용을 모두 삭제하고 싶을 때 사용하세요.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>📥 붙여넣기</b>:<br />
+            클립보드에 복사된 내용을 텍스트 상자에 붙여넣습니다.<br />
+            다른 곳에서 복사한 글을 바로 입력할 때 사용하세요.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>🛠️ 오류 부분 표시</b>:<br />
+            쌍이 맞지 않는 특수문자에 <code>🔺</code> 표시가 추가됩니다.<br />
+            오류 위치를 한눈에 확인할 수 있습니다.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>📋 복사</b>:<br />
+            입력한 텍스트를 클립보드에 복사합니다.<br />
+            다른 곳에 붙여넣고 싶을 때 사용하세요.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>📥 다운로드</b>:<br />
+            입력한 텍스트를 파일로 저장합니다.<br />
+            결과를 보관하거나, 다른 곳에 제출할 때 사용하세요.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>🌙/☀️ 테마 전환</b>:<br />
+            밝은 테마와 어두운 테마를 전환합니다.<br />
+            눈의 피로도를 줄이고 싶을 때 사용하세요.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>�� 맞춤법 검사</b>:<br />
+            <b>네이버</b> 또는 <b>바른한글(부산대)</b> 맞춤법 검사기 라디오
+            버튼을 클릭하면, 입력한 텍스트가 클립보드에 복사되고 해당 검사기
+            페이지가 새 창으로 열립니다.<br />
+            <b
+              >라디오 버튼 클릭 후 새 창에서 Ctrl+V(또는 마우스 우클릭 →
+              붙여넣기)</b
+            >로 입력창에 붙여넣은 뒤, '검사하기' 버튼을 누르세요.<br />
+            <span style="color: #888"
+              >※ 자동 입력은 불가하므로 반드시 직접 붙여넣기 해주세요.</span
+            >
+          </li>
+        </ul>
+      </div>
       <br /><button onclick="hideManual()">닫기</button>
     </div>
 
@@ -427,10 +487,23 @@
         document.getElementById("manualModal").style.display = "none";
       }
 
-      function openSpellChecker() {
+      function openSpellChecker(type) {
         const text = textarea.value;
         if (!text.trim()) {
           alert("검사할 내용을 입력하세요.");
+          document
+            .querySelectorAll("input[name=spellchecker]")
+            .forEach((r) => (r.checked = false));
+          return;
+        }
+        let url = "";
+        if (type === "barun") {
+          url = "https://nara-speller.co.kr/speller";
+        } else if (type === "naver") {
+          url =
+            "https://search.naver.com/search.naver?where=nexearch&sm=top_sug.pre&fbm=0&acr=1&acq=%ED%95%9C%EA%B5%AD%EC%96%B4+%EB%A7%9E%EC%B6%A4%EB%B2%95&qdt=0&ie=utf8&query=%ED%95%9C%EA%B5%AD%EC%96%B4+%EB%A7%9E%EC%B6%A4%EB%B2%95+%EA%B2%80%EC%82%AC%EA%B8%B0";
+        } else {
+          alert("맞춤법 검사기가 선택되지 않았습니다.");
           return;
         }
         navigator.clipboard
@@ -439,13 +512,16 @@
             alert(
               "텍스트가 클립보드에 복사되었습니다. 새 창에서 Ctrl+V로 붙여넣기 하세요."
             );
-            window.open(
-              "https://search.naver.com/search.naver?where=nexearch&sm=top_sug.pre&fbm=0&acr=1&acq=%ED%95%9C%EA%B5%AD%EC%96%B4+%EB%A7%9E%EC%B6%A4%EB%B2%95&qdt=0&ie=utf8&query=%ED%95%9C%EA%B5%AD%EC%96%B4+%EB%A7%9E%EC%B6%A4%EB%B2%95+%EA%B2%80%EC%82%AC%EA%B8%B0",
-              "_blank"
-            );
+            window.open(url, "_blank");
+            document
+              .querySelectorAll("input[name=spellchecker]")
+              .forEach((r) => (r.checked = false));
           })
           .catch(() => {
             alert("클립보드 복사에 실패했습니다. 수동으로 복사해 주세요.");
+            document
+              .querySelectorAll("input[name=spellchecker]")
+              .forEach((r) => (r.checked = false));
           });
       }
 
