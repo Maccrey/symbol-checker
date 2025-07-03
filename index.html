@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>특수문자 검사기</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card-bg: #fff;
+      --text: #333;
+      --accent: #2c3e50;
+    }
+    body.dark {
+      --bg: #1e1e1e;
+      --card-bg: #2a2a2a;
+      --text: #eee;
+      --accent: #79b8ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2rem; transition: all 0.3s ease;
+    }
+    h2 { text-align: center; color: var(--accent); }
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+    textarea {
+      height: 300px;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid #ccc;
+      white-space: pre;
+      font-family: monospace;
+      resize: vertical;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    .controls {
+      display: flex; flex-wrap: wrap;
+      gap: 1rem; justify-content: center;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px; border: none;
+      background: var(--accent); color: white;
+      font-weight: bold; cursor: pointer;
+    }
+    .results {
+      display: flex; flex-wrap: wrap;
+      gap: 1rem; justify-content: center;
+      margin-top: 1rem;
+    }
+    .card {
+      background: var(--card-bg); padding: 1rem;
+      border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center; min-width: 100px;
+      border: 2px solid transparent;
+    }
+    .even { border-color: #4caf50; }
+    .odd { border-color: #e74c3c; }
+    .symbol { font-size: 1.5rem; font-weight: bold; }
+    canvas { max-width: 100%; margin-top: 2rem; }
+    .mismatch-box {
+      width: 100%; background: #ffe4e1;
+      color: #c0392b; padding: 1rem;
+      border-radius: 8px; font-size: 0.95rem;
+      white-space: pre-wrap;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+<h2>특수문자 검사기 + 자동보정</h2>
+<div class="controls">
+  <button onclick="resetText()">🗑️ 초기화</button>
+  <button onclick="pasteFromClipboard()">📥 붙여넣기</button>
+  <button onclick="autoCorrect()">🔧 오류 부분 표시</button>
+  <button onclick="copyToClipboard()">📋 복사</button>
+  <button onclick="downloadResult()">📥 다운로드</button>
+  <button onclick="toggleTheme()">🌙/☀️ 테마 전환</button>
+</div>
+<div class="wrapper">
+  <textarea id="inputText" placeholder="여기에 텍스트를 입력하세요..."></textarea>
+  <div class="mismatch" id="mismatchBox"></div>
+</div>
+<div class="results" id="output"></div>
+<canvas id="chart" height="100"></canvas>
+
+<script>
+const textarea = document.getElementById('inputText');
+const output = document.getElementById('output');
+const mismatchBox = document.getElementById('mismatchBox');
+const ctx = document.getElementById('chart').getContext('2d');
+const body = document.body;
+
+const symbolPairs = {
+  '“': '”', '‘': '’', '(': ')', '<': '>', '《': '》', '『': '』',
+  '[': ']', '⌜': '⌟', '"': '"', "'": "'"
+};
+
+const symbols = [
+  '“', '”', '‘', '’', '(', ')', '<', '>', '《', '》',
+  '『', '』', '[', ']', '⌜', '⌟', '"', "'", '*',
+  ',', '~', '-', ':', ';', '!', '?', '.', '…', '·', '•'
+];
+
+let chart;
+
+function countDoubleSpaces(text) {
+  const matches = text.match(/  /g);
+  return matches ? matches.length : 0;
+}
+
+function updateCounts() {
+  const text = textarea.value;
+  const counts = symbols.map(s => {
+    const count = (text.match(new RegExp(s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g')) || []).length;
+    return { symbol: s, count };
+  });
+
+  const doubleSpaceCount = countDoubleSpaces(text);
+  const mismatches = checkBalancedPairs(text);
+  const unbalancedSet = new Set(mismatches.map(m => m.char));
+
+  output.innerHTML = counts.map(({ symbol, count }) => {
+    const isPairCheck = symbol in symbolPairs || Object.values(symbolPairs).includes(symbol);
+    const isBalanced = !isPairCheck || !unbalancedSet.has(symbol);
+    const icon = isBalanced ? '✅' : '⚠️';
+    const cardClass = isBalanced ? 'even' : 'odd';
+
+    return `<div class="card ${cardClass}">
+              <div class="symbol">${symbol}</div>
+              <div>${count}개 ${icon}</div>
+            </div>`;
+  }).join('') +
+  `<div class="card even">
+     <div class="symbol">VV</div>
+     <div>${doubleSpaceCount}개</div>
+   </div>`;
+
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [...counts.map(c => c.symbol), 'VV'],
+      datasets: [{
+        label: '문자 개수',
+        data: [...counts.map(c => c.count), doubleSpaceCount],
+        backgroundColor: '#3498db'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  mismatchBox.innerHTML = mismatches.length
+    ? `<div class="mismatch-box">${mismatches.map(m => `❗ ${m.type} → ${m.line}행 ${m.column}번째 글자 '${m.char}'`).join('\n')}</div>`
+    : '';
+}
+
+function checkBalancedPairs(text) {
+  const openSet = Object.keys(symbolPairs);
+  const closeSet = Object.values(symbolPairs);
+  const stack = [];
+  const mismatches = [];
+  const lines = text.split('\n');
+  let globalIndex = 0;
+
+  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+    const line = lines[lineNum];
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"' || char === "'") {
+        const last = stack[stack.length - 1];
+        if (last && last.char === char) {
+          stack.pop();
+        } else {
+          stack.push({ char, index: globalIndex + i, line: lineNum + 1, column: i + 1 });
+        }
+      } else if (openSet.includes(char)) {
+        stack.push({ char, index: globalIndex + i, line: lineNum + 1, column: i + 1 });
+      } else if (closeSet.includes(char)) {
+        const last = stack[stack.length - 1];
+        if (last && symbolPairs[last.char] === char) {
+          stack.pop();
+        } else {
+          mismatches.push({ type: '닫힘만 있음', char, index: globalIndex + i, line: lineNum + 1, column: i + 1 });
+        }
+      }
+    }
+    globalIndex += line.length + 1;
+  }
+
+  stack.forEach(item => {
+    mismatches.push({ type: '열림만 있음', char: item.char, index: item.index, line: item.line, column: item.column });
+  });
+
+  return mismatches;
+}
+
+function autoCorrect() {
+  textarea.value = textarea.value.replace(/🔺/g, '');
+  const text = textarea.value;
+  const mismatches = checkBalancedPairs(text);
+
+  if (mismatches.length === 0) {
+    updateCounts();
+    alert("✨ 모든 쌍이 올바르게 맞춰져 있습니다!");
+    return;
+  }
+
+  let newText = text.split('');
+  mismatches.forEach(item => {
+    newText[item.index] = '🔺' + newText[item.index];
+  });
+  textarea.value = newText.join('');
+  updateCounts();
+
+  navigator.clipboard.writeText(textarea.value)
+    .then(() => alert("🔧 오류 위치에 🔺 표시하고 복사 완료!"))
+    .catch(() => alert("❌ 복사 실패!"));
+}
+
+function resetText() {
+  textarea.value = '';
+  updateCounts();
+}
+
+function pasteFromClipboard() {
+  navigator.clipboard.readText()
+    .then(text => { textarea.value = text; updateCounts(); })
+    .catch(() => alert("❌ 붙여넣기 실패!"));
+}
+
+function copyToClipboard() {
+  navigator.clipboard.writeText(textarea.value)
+    .then(() => alert("📋 복사 완료!"))
+    .catch(() => alert("❌ 복사 실패!"));
+}
+
+function downloadResult() {
+  const blob = new Blob([textarea.value], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = '문장결과.txt';
+  link.click();
+}
+
+function toggleTheme() {
+  body.classList.toggle('dark');
+}
+
+textarea.addEventListener('input', updateCounts);
+updateCounts();
+</script>
+</body>
+</html>
