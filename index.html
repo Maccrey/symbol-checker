@@ -75,24 +75,55 @@
       white-space: pre-wrap;
       margin-bottom: 1rem;
     }
+    #manualModal {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 10%;
+      width: 80%;
+      height: 80%;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      overflow: auto;
+      padding: 2rem;
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
-<h2>특수문자 검사기 + 자동보정</h2>
+<h2>특수문자 검사기 + 오류 표시</h2>
+
 <div class="controls">
+  <button onclick="showManual()">📘 사용설명서</button>
   <button onclick="resetText()">🗑️ 초기화</button>
   <button onclick="pasteFromClipboard()">📥 붙여넣기</button>
-  <button onclick="autoCorrect()">🔧 오류 부분 표시</button>
+  <button onclick="autoCorrect()">🛠️ 오류 부분 표시</button>
   <button onclick="copyToClipboard()">📋 복사</button>
   <button onclick="downloadResult()">📥 다운로드</button>
   <button onclick="toggleTheme()">🌙/☀️ 테마 전환</button>
 </div>
+
 <div class="wrapper">
   <textarea id="inputText" placeholder="여기에 텍스트를 입력하세요..."></textarea>
   <div class="mismatch" id="mismatchBox"></div>
 </div>
+
 <div class="results" id="output"></div>
 <canvas id="chart" height="100"></canvas>
+
+<!-- 사용설명서 모달 -->
+<div id="manualModal">
+  <h3>📘 특수문자 검사기 사용 설명서</h3>
+  <p><strong>1. 텍스트 입력</strong><br>검사하고 싶은 문장을 위 텍스트 상자에 붙여넣으세요.</p>
+  <p><strong>2. 🛠️ 오류 부분 표시</strong><br>쌍이 맞지 않는 특수문자에 <code>🔺</code> 표시가 추가됩니다.</p>
+  <p><strong>3. VV 카드</strong><br>두 칸 공백("  ")이 발견된 횟수를 VV 카드로 확인합니다.</p>
+  <p><strong>4. ✅ / ⚠️ 카드</strong><br>짝이 맞는 문자는 ✅, 틀리면 ⚠️으로 표시됩니다.</p>
+  <p><strong>5. 📊 하단 차트</strong><br>특수문자의 사용 빈도를 그래프로 확인하세요.</p>
+  <p><strong>6. 복사 / 저장</strong><br>복사 버튼과 다운로드 버튼으로 결과를 저장할 수 있습니다.</p>
+  <br><button onclick="hideManual()">닫기</button>
+</div>
 
 <script>
 const textarea = document.getElementById('inputText');
@@ -259,6 +290,14 @@ function downloadResult() {
 
 function toggleTheme() {
   body.classList.toggle('dark');
+}
+
+function showManual() {
+  document.getElementById('manualModal').style.display = 'block';
+}
+
+function hideManual() {
+  document.getElementById('manualModal').style.display = 'none';
 }
 
 textarea.addEventListener('input', updateCounts);
