@@ -132,7 +132,9 @@
       <button onclick="autoCorrect()">🛠️ 오류 부분 표시</button>
       <button onclick="copyToClipboard()">📋 복사</button>
       <button onclick="downloadResult()">📥 다운로드</button>
-      <button onclick="toggleTheme()">☀️/🌙 테마 전환</button>
+      <button onclick="toggleTheme()">🌙/☀️ 테마 전환</button>
+      <button id="txtUploadBtn" type="button">📂 txt 업로드</button>
+      <input type="file" id="txtUpload" accept=".txt" style="display: none" />
     </div>
     <!-- 맞춤법 검사기 선택 라디오 버튼: 입력창 위로 이동 -->
     <div
@@ -210,7 +212,11 @@
           <li style="margin-bottom: 1.1em">
             <b>🛠️ 오류 부분 표시</b>:<br />
             쌍이 맞지 않는 특수문자에 <code>🔺</code> 표시가 추가됩니다.<br />
-            오류 위치를 한눈에 확인할 수 있습니다.
+            오류 위치를 한눈에 확인할 수 있습니다.<br />
+            <b>오류 메시지 클릭 시</b>: 해당 줄이 textarea 중앙에 오도록
+            스크롤되고, 아래에 <span style="color: #e74c3c">미리보기</span>가
+            나타나며, 오류 문자가 빨간색으로 하이라이트됩니다. 미리보기는 ×
+            버튼이나 입력 시 닫힙니다.
           </li>
           <li style="margin-bottom: 1.1em">
             <b>📋 복사</b>:<br />
@@ -226,6 +232,22 @@
             <b>🌙/☀️ 테마 전환</b>:<br />
             밝은 테마와 어두운 테마를 전환합니다.<br />
             눈의 피로도를 줄이고 싶을 때 사용하세요.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>📂 txt 업로드</b>:<br />
+            txt 파일을 업로드하면 파일의 내용이 텍스트 상자에 자동으로
+            입력됩니다.<br />
+            파일 확장자가 .txt가 아닌 경우 업로드가 제한됩니다.
+          </li>
+          <li style="margin-bottom: 1.1em">
+            <b>특수문자 카드 클릭</b>:<br />
+            카드의 기호(큰 글자 부분)를 클릭하면 해당 기호가 클립보드에
+            복사됩니다.<br />
+            <b
+              >짝이 있는 기호(예: ( → ), [ → ], " → ", 또는 ) → ( 등)는 반대쪽
+              짝이 복사</b
+            >됩니다.<br />
+            짝이 없는 기호는 그대로 복사됩니다. VV 카드는 복사되지 않습니다.
           </li>
           <li style="margin-bottom: 1.1em">
             <b>맞춤법 검사</b>:<br />
@@ -271,7 +293,7 @@
       const mismatchBox = document.getElementById("mismatchBox");
       const ctx = document.getElementById("chart").getContext("2d");
       const body = document.body;
-
+      // symbolPairs는 절대 수정하지 말것
       const symbolPairs = {
         "“": "”",
         "‘": "’",
@@ -285,7 +307,7 @@
         '"': '"',
         "'": "'",
       };
-
+      // symbols는 절대 수정하지 말것
       const symbols = [
         "“",
         "”",
@@ -564,20 +586,138 @@
           });
       }
 
-      // mismatchBox 내 오류 메시지 클릭 시 textarea 해당 위치로 이동 및 하이라이트
+      // 오류 메시지 클릭 시 해당 줄 강조 미리보기 및 커서 이동, textarea 중앙 정렬
       mismatchBox.addEventListener("click", function (e) {
         if (e.target.classList.contains("mismatch-msg")) {
           const idx = Number(e.target.getAttribute("data-index"));
           textarea.focus();
           textarea.setSelectionRange(idx, idx + 1);
-          // 스크롤 보정
-          const lines = textarea.value.substr(0, idx).split("\n").length;
-          textarea.scrollTop = (lines - 1) * 20;
+
+          // 줄 정보 계산
+          const text = textarea.value;
+          const lines = text.split("\n");
+          let charCount = 0,
+            lineIdx = 0,
+            colIdx = 0;
+          for (let i = 0; i < lines.length; i++) {
+            if (idx < charCount + lines[i].length + 1) {
+              lineIdx = i;
+              colIdx = idx - charCount;
+              break;
+            }
+            charCount += lines[i].length + 1;
+          }
+
+          // 미리보기 박스 생성 또는 재사용
+          let previewBox = document.getElementById("linePreview");
+          if (!previewBox) {
+            previewBox = document.createElement("div");
+            previewBox.id = "linePreview";
+            previewBox.style.margin = "0.7em 0 1em 0";
+            previewBox.style.background = "#fff6f6";
+            previewBox.style.border = "2px solid #e74c3c";
+            previewBox.style.borderRadius = "7px";
+            previewBox.style.padding = "1em";
+            previewBox.style.fontFamily = "monospace";
+            previewBox.style.fontSize = "1.1em";
+            previewBox.style.position = "relative";
+            textarea.parentNode.insertBefore(previewBox, textarea.nextSibling);
+          }
+          // 닫기 버튼
+          previewBox.innerHTML = `<button id="closePreview" style="position:absolute;top:7px;right:10px;background:none;border:none;font-size:1.2em;cursor:pointer;color:#e74c3c;">×</button>`;
+
+          // 오류 줄 강조 및 오류 문자 하이라이트
+          const line = lines[lineIdx];
+          let highlighted = "";
+          for (let i = 0; i < line.length; i++) {
+            if (i === colIdx) {
+              highlighted += `<span style="background:#e74c3c;color:#fff;padding:0 2px;border-radius:3px;">${line[i]}</span>`;
+            } else {
+              highlighted += line[i];
+            }
+          }
+          previewBox.innerHTML += `<div style="margin-top:0.5em;"><b style="color:#e74c3c;">오류 줄 미리보기:</b></div>
+            <div style="margin-top:0.5em; background:#fff; border-radius:5px; border:1px dashed #e74c3c; padding:0.5em 1em; font-weight:bold;">
+              <span style="color:#e74c3c;">→</span> ${highlighted}
+            </div>`;
+
+          // textarea에서 해당 줄이 중앙에 오도록 스크롤 조정
+          const lineHeight = textarea.scrollHeight / lines.length;
+          const targetScroll = Math.max(
+            0,
+            lineHeight * (lineIdx - Math.floor(textarea.rows / 2))
+          );
+          textarea.scrollTop = targetScroll;
+
+          // 닫기 버튼 이벤트
+          document.getElementById("closePreview").onclick = () =>
+            previewBox.remove();
         }
+      });
+
+      // textarea 입력 시 미리보기 자동 닫힘
+      textarea.addEventListener("input", function () {
+        const previewBox = document.getElementById("linePreview");
+        if (previewBox) previewBox.remove();
       });
 
       textarea.addEventListener("input", updateCounts);
       updateCounts();
+
+      // txt 업로드 버튼 클릭 시 파일 선택창 열기
+      document
+        .getElementById("txtUploadBtn")
+        .addEventListener("click", function () {
+          document.getElementById("txtUpload").click();
+        });
+
+      // txt 파일 업로드 시 textarea에 내용 입력
+      document
+        .getElementById("txtUpload")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          if (!file.name.endsWith(".txt")) {
+            alert("txt 파일만 업로드할 수 있습니다.");
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function (evt) {
+            textarea.value = evt.target.result;
+            updateCounts();
+          };
+          reader.readAsText(file, "utf-8");
+        });
+
+      // 카드 기호 클릭 시 해당 기호(짝이 있으면 반대쪽 짝) 복사 기능 추가
+      output.addEventListener("click", function (e) {
+        if (e.target.classList.contains("symbol")) {
+          const symbol = e.target.textContent;
+          if (!symbol || symbol === "VV") return;
+          // 짝이 있는 경우 반대쪽 짝 복사
+          let toCopy = symbol;
+          // symbolPairs에서 열림→닫힘, 닫힘→열림 모두 지원
+          if (symbolPairs[symbol]) {
+            toCopy = symbolPairs[symbol];
+          } else {
+            // 닫힘 기호라면 열림 기호 찾기
+            for (const [open, close] of Object.entries(symbolPairs)) {
+              if (close === symbol) {
+                toCopy = open;
+                break;
+              }
+            }
+          }
+          navigator.clipboard
+            .writeText(toCopy)
+            .then(() => {
+              alert(`'${toCopy}' 기호가 복사되었습니다!`);
+            })
+            .catch(() => {
+              alert("클립보드 복사에 실패했습니다.");
+            });
+        }
+      });
     </script>
   </body>
 </html>
