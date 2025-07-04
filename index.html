@@ -132,29 +132,37 @@
       <button onclick="autoCorrect()">🛠️ 오류 부분 표시</button>
       <button onclick="copyToClipboard()">📋 복사</button>
       <button onclick="downloadResult()">📥 다운로드</button>
-      <button onclick="toggleTheme()">🌙/☀️ 테마 전환</button>
-      <div style="display: inline-block; margin-left: 1em">
-        <label style="margin-right: 0.7em; cursor: pointer">
-          <input
-            type="radio"
-            name="spellchecker"
-            value="naver"
-            onclick="openSpellChecker('naver')"
-          />
-          네이버 맞춤법 검사기
-        </label>
-        <label style="cursor: pointer">
-          <input
-            type="radio"
-            name="spellchecker"
-            value="barun"
-            onclick="openSpellChecker('barun')"
-          />
-          바른한글 맞춤법 검사기
-        </label>
-      </div>
+      <button onclick="toggleTheme()">��/☀️ 테마 전환</button>
     </div>
-
+    <!-- 맞춤법 검사기 선택 라디오 버튼: 입력창 위로 이동 -->
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        gap: 2em;
+        margin: 1.5em 0 0.5em 0;
+        align-items: center;
+      "
+    >
+      <label style="margin-right: 0.7em; cursor: pointer; font-size: 1.05em">
+        <input
+          type="radio"
+          name="spellchecker"
+          value="naver"
+          onclick="openSpellChecker('naver')"
+        />
+        네이버 맞춤법 검사기
+      </label>
+      <label style="cursor: pointer; font-size: 1.05em">
+        <input
+          type="radio"
+          name="spellchecker"
+          value="barun"
+          onclick="openSpellChecker('barun')"
+        />
+        바른한글 맞춤법 검사기
+      </label>
+    </div>
     <div class="wrapper">
       <textarea
         id="inputText"
@@ -220,7 +228,7 @@
             눈의 피로도를 줄이고 싶을 때 사용하세요.
           </li>
           <li style="margin-bottom: 1.1em">
-            <b>�� 맞춤법 검사</b>:<br />
+            <b>맞춤법 검사</b>:<br />
             <b>네이버</b> 또는 <b>바른한글(부산대)</b> 맞춤법 검사기 라디오
             버튼을 클릭하면, 입력한 텍스트가 클립보드에 복사되고 해당 검사기
             페이지가 새 창으로 열립니다.<br />
@@ -245,9 +253,11 @@
       const body = document.body;
 
       const symbolPairs = {
-        "": "",
+        "“": "”",
+        "‘": "’",
         "(": ")",
         "<": ">",
+        "〈": "〉",
         "《": "》",
         "『": "』",
         "[": "]",
@@ -257,11 +267,16 @@
       };
 
       const symbols = [
-        "",
+        "“",
+        "”",
+        "‘",
+        "’",
         "(",
         ")",
         "<",
         ">",
+        "〈",
+        "〉",
         "《",
         "》",
         "『",
@@ -310,6 +325,7 @@
 
         output.innerHTML =
           counts
+            .filter(({ symbol, count }) => count > 0)
             .map(({ symbol, count }) => {
               const isPairCheck =
                 symbol in symbolPairs ||
