@@ -246,6 +246,26 @@
     </div>
 
     <script>
+      // 페이지 시작 시 브라우저 캐시(localStorage, sessionStorage, cookie)를 최대한 삭제
+      window.onload = function () {
+        // localStorage와 sessionStorage 비우기
+        try {
+          localStorage.clear();
+          sessionStorage.clear();
+        } catch (e) {}
+        // 쿠키 삭제 (현재 도메인, 경로 한정)
+        document.cookie.split(";").forEach(function (c) {
+          try {
+            document.cookie = c
+              .replace(/^ +/, "")
+              .replace(
+                /=.*/,
+                "=;expires=" + new Date(0).toUTCString() + ";path=/"
+              );
+          } catch (e) {}
+        });
+      };
+
       const textarea = document.getElementById("inputText");
       const output = document.getElementById("output");
       const mismatchBox = document.getElementById("mismatchBox");
