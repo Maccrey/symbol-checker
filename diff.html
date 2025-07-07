@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>문서 비교(diff 모드)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f5f7fa;
+        color: #222;
+        padding: 2rem;
+      }
+      h2 {
+        text-align: center;
+        color: #2c3e50;
+      }
+      .diff-container {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+      }
+      textarea {
+        display: none;
+      }
+      .editable {
+        width: 400px;
+        height: 300px;
+        padding: 1rem;
+        font-size: 1rem;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        background: #fff;
+        color: #222;
+        font-family: monospace;
+        outline: none;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 1rem;
+      }
+      button {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: none;
+        background: #2c3e50;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .diff-result {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1.5rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+      }
+      .diff-msg {
+        cursor: pointer;
+        text-decoration: underline;
+        color: #c0392b;
+      }
+      .highlight {
+        background: #ffe4e1;
+        color: #c0392b;
+        border-radius: 3px;
+      }
+      .file-label {
+        font-size: 0.95em;
+        color: #555;
+      }
+      .file-upload-btn {
+        background: #2c3e50;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        margin-right: 0.5em;
+      }
+      input[type="file"].hidden-file {
+        display: none;
+      }
+      .preview {
+        min-height: 2em;
+        background: #f9f9f9;
+        border-radius: 6px;
+        margin-top: 0.5em;
+        padding: 0.5em 0.7em;
+        font-family: monospace;
+        font-size: 1em;
+        word-break: break-all;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>문서 비교(diff 모드)</h2>
+    <div class="controls">
+      <label class="file-label">
+        <button
+          type="button"
+          class="file-upload-btn"
+          onclick="document.getElementById('file1').click()"
+        >
+          📂 문서1 업로드
+        </button>
+        <input type="file" id="file1" class="hidden-file" accept=".txt" />
+      </label>
+      <label class="file-label">
+        <button
+          type="button"
+          class="file-upload-btn"
+          onclick="document.getElementById('file2').click()"
+        >
+          📂 문서2 업로드
+        </button>
+        <input type="file" id="file2" class="hidden-file" accept=".txt" />
+      </label>
+      <button onclick="doDiff()">비교(diff)</button>
+      <button onclick="clearTexts()">초기화</button>
+      <button onclick="swapTexts()">↔️ 문서 교환</button>
+    </div>
+    <div class="diff-container">
+      <div style="display: flex; flex-direction: column">
+        <div
+          id="text1"
+          class="editable"
+          contenteditable="true"
+          placeholder="문서1 입력 또는 업로드"
+        ></div>
+        <div id="preview1" class="preview"></div>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <div
+          id="text2"
+          class="editable"
+          contenteditable="true"
+          placeholder="문서2 입력 또는 업로드"
+        ></div>
+        <div id="preview2" class="preview"></div>
+      </div>
+    </div>
+    <div class="diff-result" id="diffResult"></div>
+
+    <script>
+      // 파일 업로드
+      document.getElementById("file1").addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) =>
+          (document.getElementById("text1").innerText = evt.target.result);
+        reader.readAsText(file, "utf-8");
+      });
+      document.getElementById("file2").addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) =>
+          (document.getElementById("text2").innerText = evt.target.result);
+        reader.readAsText(file, "utf-8");
+      });
+
+      // diff 실행
+      function doDiff() {
+        const text1 = document.getElementById("text1").innerText;
+        const text2 = document.getElementById("text2").innerText;
+        const dmp = new diff_match_patch();
+        const diffs = dmp.diff_main(text1, text2);
+        dmp.diff_cleanupSemantic(diffs);
+
+        // diff 메시지 생성 (텍스트 하이라이트)
+        let html = "<b>다른 부분(빨간색: 삭제, 초록색: 추가, 회색: 동일):</b>";
+        let idx1 = 0,
+          idx2 = 0;
+        let msgIdx = 0;
+        let previewMap = [];
+        // 미리보기용
+        let html1 = "",
+          html2 = "";
+
+        diffs.forEach(([op, data], i) => {
+          // 줄바꿈을 <br>로 변환
+          const htmlData = escapeHtml(data).replace(/\n/g, "<br>");
+          if (op === 1) {
+            // 추가
+            html += `<span class="diff-msg diff-insert" data-idx2="${idx2}" data-type="insert" data-msgidx="${msgIdx}" style="background:#e6ffe6;color:#228B22;border-radius:3px;padding:0 2px;">${htmlData}</span>`;
+            html1 += `<span style="background:#f5f7fa;color:#888;">${"".padStart(
+              data.length,
+              " "
+            )}</span>`;
+            html2 += `<span style="background:#e6ffe6;color:#228B22;border-radius:3px;padding:0 2px;">${htmlData}</span>`;
+            previewMap.push({ type: "insert", idx1, idx2, data, msgIdx });
+            idx2 += data.length;
+            msgIdx++;
+          } else if (op === -1) {
+            // 삭제
+            html += `<span class="diff-msg diff-delete" data-idx1="${idx1}" data-type="delete" data-msgidx="${msgIdx}" style="background:#ffe4e1;color:#c0392b;border-radius:3px;padding:0 2px;">${htmlData}</span>`;
+            html1 += `<span style="background:#ffe4e1;color:#c0392b;border-radius:3px;padding:0 2px;">${htmlData}</span>`;
+            html2 += `<span style="background:#f5f7fa;color:#888;">${"".padStart(
+              data.length,
+              " "
+            )}</span>`;
+            previewMap.push({ type: "delete", idx1, idx2, data, msgIdx });
+            idx1 += data.length;
+            msgIdx++;
+          } else {
+            // 동일
+            html += `<span style="background:#f5f7fa;color:#888;">${htmlData}</span>`;
+            html1 += `<span style="background:#f5f7fa;color:#888;">${htmlData}</span>`;
+            html2 += `<span style="background:#f5f7fa;color:#888;">${htmlData}</span>`;
+            idx1 += data.length;
+            idx2 += data.length;
+          }
+        });
+        if (msgIdx === 0) html += "두 문서가 동일합니다.";
+
+        document.getElementById("diffResult").innerHTML = html;
+        document.getElementById("preview1").innerHTML = html1;
+        document.getElementById("preview2").innerHTML = html2;
+
+        // diff 메시지 클릭 시 해당 위치 하이라이트
+        document.querySelectorAll(".diff-msg").forEach((el) => {
+          el.onclick = function () {
+            const type = el.getAttribute("data-type");
+            const msgIdx = Number(el.getAttribute("data-msgidx"));
+            const preview = previewMap.find((p) => p.msgIdx === msgIdx);
+            if (!preview) return;
+
+            // 하이라이트 초기화
+            document.getElementById("text1").classList.remove("highlight");
+            document.getElementById("text2").classList.remove("highlight");
+
+            if (type === "delete") {
+              highlightText("text1", preview.idx1, preview.data.length);
+            } else if (type === "insert") {
+              highlightText("text2", preview.idx2, preview.data.length);
+            }
+          };
+        });
+      }
+
+      // HTML 이스케이프
+      function escapeHtml(str) {
+        return str.replace(/[&<>'"]/g, function (c) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "'": "&#39;",
+            '"': "&quot;",
+          }[c];
+        });
+      }
+
+      // textarea에서 특정 부분 하이라이트 및 스크롤
+      function highlightText(divId, start, length) {
+        const div = document.getElementById(divId);
+        // 기존 selection 제거
+        const selection = window.getSelection();
+        const range = document.createRange();
+        // 텍스트 노드 기준으로 커서 이동
+        let node = div.firstChild;
+        let offset = 0;
+        while (node && node.nodeType === 3 && offset + node.length < start) {
+          offset += node.length;
+          node = node.nextSibling;
+        }
+        if (node && node.nodeType === 3) {
+          range.setStart(node, start - offset);
+          range.setEnd(node, start - offset + length);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          // 스크롤 중앙 정렬
+          div.scrollTop =
+            div.scrollHeight * ((start + length / 2) / div.innerText.length) -
+            div.clientHeight / 2;
+        }
+        div.focus();
+      }
+
+      // 초기화 버튼
+      function clearTexts() {
+        document.getElementById("text1").innerText = "";
+        document.getElementById("text2").innerText = "";
+        document.getElementById("diffResult").innerHTML = "";
+        document.getElementById("preview1").innerHTML = "";
+        document.getElementById("preview2").innerHTML = "";
+      }
+
+      // 문서 교환 버튼
+      function swapTexts() {
+        const t1 = document.getElementById("text1").innerText;
+        const t2 = document.getElementById("text2").innerText;
+        document.getElementById("text1").innerText = t2;
+        document.getElementById("text2").innerText = t1;
+      }
+    </script>
+  </body>
+</html>

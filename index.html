@@ -1,20 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
   <head>
-    <!-- Google Tag Manager -->
-    <script>
-      (function (w, d, s, l, i) {
-        w[l] = w[l] || [];
-        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
-        var f = d.getElementsByTagName(s)[0],
-          j = d.createElement(s),
-          dl = l != "dataLayer" ? "&l=" + l : "";
-        j.async = true;
-        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
-        f.parentNode.insertBefore(j, f);
-      })(window, document, "script", "dataLayer", "GTM-5PHXCL7R");
-    </script>
-    <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
     <title>특수문자 검사기</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -137,63 +123,18 @@
     </style>
   </head>
   <body>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript
-      ><iframe
-        src="https://www.googletagmanager.com/ns.html?id=GTM-5PHXCL7R"
-        height="0"
-        width="0"
-        style="display: none; visibility: hidden"
-      ></iframe
-    ></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-
     <h2>특수문자 검사기</h2>
 
     <div class="controls">
-      <button onclick="trackButtonClick('manual'); showManual()">
-        📘 사용설명서
-      </button>
-      <button onclick="trackButtonClick('reset'); resetText()">
-        🗑️ 초기화
-      </button>
-      <button onclick="trackButtonClick('paste'); pasteFromClipboard()">
-        📥 붙여넣기
-      </button>
-      <button onclick="trackButtonClick('auto_correct'); autoCorrect()">
-        🛠️ 오류 부분 표시
-      </button>
-      <button onclick="trackButtonClick('spacing'); checkSpacing()">
-        🔤 띄어쓰기 검사
-      </button>
-      <button onclick="trackButtonClick('spelling'); checkSpelling()">
-        📝 맞춤법 검사
-      </button>
-      <button onclick="trackButtonClick('bareun_check'); checkBareun()">
-        📝 바른한글 맞춤법/띄어쓰기 검사
-      </button>
-      <button onclick="trackButtonClick('copy'); copyToClipboard()">
-        📋 복사
-      </button>
-      <button onclick="trackButtonClick('download'); downloadResult()">
-        📥 다운로드
-      </button>
-      <button onclick="trackButtonClick('theme_toggle'); toggleTheme()">
-        🌙/☀️ 테마 전환
-      </button>
-      <button
-        id="txtUploadBtn"
-        type="button"
-        onclick="trackButtonClick('txt_upload_btn')"
-      >
-        📂 txt 업로드
-      </button>
-      <button
-        onclick="trackButtonClick('system_info'); checkSystemInfo()"
-        style="background-color: #607d8b"
-      >
-        ℹ️ 시스템 정보
-      </button>
+      <button onclick="showManual()">📘 사용설명서</button>
+      <button onclick="resetText()">🗑️ 초기화</button>
+      <button onclick="pasteFromClipboard()">📥 붙여넣기</button>
+      <button onclick="autoCorrect()">🛠️ 오류 부분 표시</button>
+      <button onclick="copyToClipboard()">📋 복사</button>
+      <button onclick="downloadResult()">📥 다운로드</button>
+      <button onclick="toggleTheme()">🌙/☀️ 테마 전환</button>
+      <button id="txtUploadBtn" type="button">📂 txt 업로드</button>
+      <button onclick="window.open('diff.html', '_blank')">📝 diff 모드</button>
       <input type="file" id="txtUpload" accept=".txt" style="display: none" />
     </div>
     <!-- 맞춤법 검사기 선택 라디오 버튼: 입력창 위로 이동 -->
@@ -300,6 +241,11 @@
             파일 확장자가 .txt가 아닌 경우 업로드가 제한됩니다.
           </li>
           <li style="margin-bottom: 1.1em">
+            <b>📝 diff 모드</b>:<br />
+            diff.html 파일을 새 창으로 엽니다.<br />
+            두 텍스트의 차이를 시각적으로 확인할 수 있습니다.
+          </li>
+          <li style="margin-bottom: 1.1em">
             <b>특수문자 카드 클릭</b>:<br />
             카드의 기호(큰 글자 부분)를 클릭하면 해당 기호가 클립보드에
             복사됩니다.<br />
@@ -355,7 +301,8 @@
       const body = document.body;
       // symbolPairs는 절대 수정하지 말것
       const symbolPairs = {
-        "": "",
+        "“": "”",
+        "‘": "’",
         "(": ")",
         "<": ">",
         "〈": "〉",
@@ -368,7 +315,10 @@
       };
       // symbols는 절대 수정하지 말것
       const symbols = [
-        "",
+        "“",
+        "”",
+        "‘",
+        "’",
         "(",
         ")",
         "<",
@@ -774,15 +724,6 @@
             });
         }
       });
-
-      // GA4 커스텀 이벤트 추적 함수
-      function trackButtonClick(buttonName) {
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          event: "custom_button_click",
-          button_name: buttonName,
-        });
-      }
     </script>
   </body>
 </html>
