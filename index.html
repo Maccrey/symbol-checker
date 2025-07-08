@@ -551,14 +551,16 @@
         updateCounts();
       }
 
-      function pasteFromClipboard() {
-        navigator.clipboard
-          .readText()
-          .then((text) => {
-            textarea.value = text;
-            updateCounts();
-          })
-          .catch(() => alert("❌ 붙여넣기 실패!"));
+      async function pasteFromClipboard() {
+        try {
+          const text = await navigator.clipboard.readText();
+          textarea.value = text;
+          updateCounts();
+        } catch (e) {
+          alert(
+            "❌ 붙여넣기 권한이 거부되었거나, 브라우저에서 지원하지 않습니다. 수동으로 Ctrl+V(⌘+V)로 붙여넣기 해주세요."
+          );
+        }
       }
 
       function copyToClipboard() {
